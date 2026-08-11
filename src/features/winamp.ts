@@ -1,25 +1,27 @@
-let mounted = false;
+// Winamp is never wrapped in our own window chrome — clicking the button
+// just creates (or brings back) the real Webamp instance, which draws its
+// own skinned, draggable window straight onto the desktop.
+let webampInstance: import('webamp').default | null = null;
+let container: HTMLElement | null = null;
 
-export async function mountWinamp(root: HTMLElement) {
-  const holder = root.querySelector<HTMLElement>('[data-winamp-holder]');
-  if (!holder) return;
+export async function toggleWinamp() {
+  const { default: Webamp } = await import('webamp');
 
-  if (mounted) return;
-  mounted = true;
-
-  holder.innerHTML = '<p style="text-align:center;">Загрузка плеера…</p>';
-
-  try {
-    const { default: Webamp } = await import('webamp');
-    if (!Webamp.browserIsSupported()) {
-      holder.innerHTML = '<p>Ваш браузер не поддерживает Winamp-плеер.</p>';
-      return;
-    }
-    holder.innerHTML = '';
-    const webamp = new Webamp({});
-    await webamp.renderWhenReady(holder);
-  } catch {
-    holder.innerHTML = '<p>Не удалось загрузить плеер.</p>';
-    mounted = false;
+  if (webampInstance) {
+    webampInstance.reopen();
+    return;
   }
+
+  if (!Webamp.browserIsSupported()) {
+    // eslint-disable-next-line no-alert
+    alert('Ваш браузер не поддерживает Winamp-плеер.');
+    return;
+  }
+
+  container = document.createElement('div');
+  container.id = 'webamp-root';
+  document.body.appendChild(container);
+
+  webampInstance = new Webamp({});
+  await webampInstance.renderWhenReady(container);
 }

@@ -1,18 +1,6 @@
-@font-face {
-  font-family: "DosFont";
-  src: url("/dos_font.ttf") format("truetype");
-  font-display: swap;
-}
-
 :root {
-  --xp-blue: #0a246a;
-  --xp-blue-light: #3a6ea5;
-  --taskbar-h: 30px;
-  --taskbar-h-mobile: 52px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
-
-
 
 html,
 body {
@@ -24,7 +12,6 @@ body {
 }
 
 body {
-  font-family: "Pixelated MS Sans Serif", Arial, sans-serif;
   background: url("/img/bliss.jpg") center top / cover no-repeat fixed;
   user-select: none;
 }
@@ -39,18 +26,6 @@ body {
   position: relative;
   height: 100%;
   width: 100%;
-}
-
-button {
-  font-family: inherit;
-}
-
-a {
-  color: inherit;
-}
-
-::-webkit-scrollbar {
-  width: 16px;
 }
 
 .visually-hidden {

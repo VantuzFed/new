@@ -1,6 +1,7 @@
 import { APPS } from './apps';
 import type { AppDef } from './apps';
 import { makeDraggable } from './drag';
+import { toggleWinamp } from './features/winamp';
 
 let zCounter = 10;
 let focusedId: string | null = null;
@@ -8,7 +9,9 @@ const closedApps = new Set<string>();
 const minimizedApps = new Set<string>();
 const desktopWindowEls = new Map<string, HTMLElement>();
 
-function buildTitleBar(app: AppDef, opts: { mobile: boolean }) {
+/* ------------------------- SHARED ------------------------- */
+
+function buildTitleBar(app: AppDef) {
   const bar = document.createElement('div');
   bar.className = 'title-bar';
 
@@ -19,48 +22,45 @@ function buildTitleBar(app: AppDef, opts: { mobile: boolean }) {
 
   const controls = document.createElement('div');
   controls.className = 'title-bar-controls';
-
-  if (opts.mobile) {
-    const back = document.createElement('button');
-    back.setAttribute('aria-label', 'Back');
-    back.addEventListener('click', closeMobileApp);
-    controls.appendChild(back);
-  } else {
-    const min = document.createElement('button');
-    min.setAttribute('aria-label', 'Minimize');
-    const max = document.createElement('button');
-    max.setAttribute('aria-label', 'Maximize');
-    const close = document.createElement('button');
-    close.setAttribute('aria-label', 'Close');
-    controls.append(min, max, close);
-  }
+  const min = document.createElement('button');
+  min.setAttribute('aria-label', 'Minimize');
+  const max = document.createElement('button');
+  max.setAttribute('aria-label', 'Maximize');
+  const close = document.createElement('button');
+  close.setAttribute('aria-label', 'Close');
+  controls.append(min, max, close);
 
   bar.appendChild(controls);
-  return bar;
+  return { bar, min, max, close };
 }
 
 function wireContentActions(root: HTMLElement) {
   root.querySelectorAll<HTMLElement>('[data-open-app]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const id = btn.getAttribute('data-open-app')!;
-      if (window.matchMedia('(max-width: 760px)').matches) {
-        openMobileApp(id);
-      } else {
-        openDesktopWindow(id);
-      }
+      if (currentMode() === 'mobile') openMobileApp(id);
+      else openDesktopWindow(id);
+    });
+  });
+  root.querySelectorAll<HTMLElement>('[data-winamp-trigger]').forEach((btn) => {
+    btn.addEventListener('click', () => toggleWinamp());
+  });
+  root.querySelectorAll<HTMLElement>('[data-nav]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const href = btn.getAttribute('data-nav')!;
+      if (href.startsWith('http')) window.open(href, '_blank', 'noopener,noreferrer');
+      else window.location.href = href;
     });
   });
 }
 
-/** Retrigger the 3D "pop in" animation, used whenever a window opens/restores. */
 function playOpenAnimation(win: HTMLElement) {
   win.classList.remove('opening');
-  // Force reflow so the animation can be re-applied.
   void win.offsetWidth;
   win.classList.add('opening');
 }
 
-/* ------------------------- DESKTOP ------------------------- */
+/* ------------------------- DESKTOP WINDOWS ------------------------- */
 
 function buildDesktopWindow(app: AppDef, desktop: HTMLElement) {
   if (!app.desktop || !app.content) return;
@@ -72,11 +72,12 @@ function buildDesktopWindow(app: AppDef, desktop: HTMLElement) {
   win.style.zIndex = String(zCounter++);
   win.dataset.appId = app.id;
 
-  const bar = buildTitleBar(app, { mobile: false });
+  const { bar, min, max, close } = buildTitleBar(app);
   win.appendChild(bar);
 
   const body = document.createElement('div');
   body.className = 'window-body';
+  if (app.centered) body.style.textAlign = 'center';
   body.innerHTML = app.content();
   win.appendChild(body);
 
@@ -86,18 +87,14 @@ function buildDesktopWindow(app: AppDef, desktop: HTMLElement) {
 
   win.addEventListener('pointerdown', () => focusWindow(app.id));
 
-  const [minBtn, maxBtn, closeBtn] = Array.from(
-    bar.querySelectorAll<HTMLButtonElement>('.title-bar-controls button')
-  );
-
-  minBtn.addEventListener('click', (e) => {
+  min.addEventListener('click', (e) => {
     e.stopPropagation();
     minimizeWindow(app.id);
   });
 
   let maximized = false;
   let savedRect = { top: win.style.top, left: win.style.left, width: win.style.width, height: win.style.height };
-  maxBtn.addEventListener('click', (e) => {
+  max.addEventListener('click', (e) => {
     e.stopPropagation();
     if (!maximized) {
       savedRect = { top: win.style.top, left: win.style.left, width: win.style.width, height: win.style.height };
@@ -106,16 +103,16 @@ function buildDesktopWindow(app: AppDef, desktop: HTMLElement) {
       win.style.left = '0px';
       win.style.width = `${rect.width}px`;
       win.style.height = `${rect.height}px`;
-      maxBtn.setAttribute('aria-label', 'Restore');
+      max.setAttribute('aria-label', 'Restore');
     } else {
       Object.assign(win.style, savedRect);
-      maxBtn.setAttribute('aria-label', 'Maximize');
+      max.setAttribute('aria-label', 'Maximize');
     }
     maximized = !maximized;
     focusWindow(app.id);
   });
 
-  closeBtn.addEventListener('click', (e) => {
+  close.addEventListener('click', (e) => {
     e.stopPropagation();
     win.classList.add('disabled');
     closedApps.add(app.id);
@@ -137,7 +134,6 @@ function focusWindow(id: string) {
   renderTaskbar();
 }
 
-/** Fully hides the window and keeps only a taskbar entry, like a real XP minimize. */
 function minimizeWindow(id: string) {
   const win = desktopWindowEls.get(id);
   if (!win) return;
@@ -176,10 +172,11 @@ function renderTaskbar() {
   for (const app of APPS) {
     if (app.kind !== 'window') continue;
     if (closedApps.has(app.id)) continue;
-    const item = document.createElement('div');
+    const item = document.createElement('button');
+    item.type = 'button';
     item.className = 'taskbar-item';
-    if (minimizedApps.has(app.id)) item.classList.add('is-minimized');
-    item.textContent = `${app.icon} ${app.title}`;
+    if (focusedId === app.id && !minimizedApps.has(app.id)) item.classList.add('is-active');
+    item.innerHTML = `<img src="${app.icon}" alt="" /><span>${app.title}</span>`;
     item.addEventListener('click', () => {
       if (minimizedApps.has(app.id)) {
         restoreWindow(app.id);
@@ -193,43 +190,30 @@ function renderTaskbar() {
   }
 }
 
-function renderClock() {
-  const clock = document.querySelector<HTMLElement>('.taskbar-clock');
-  if (!clock) return;
-  const update = () => {
-    const now = new Date();
-    clock.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-  update();
-  setInterval(update, 15000);
-}
-
 let startOpen = false;
 
-function toggleStartMenu() {
-  startOpen = !startOpen;
-  let popup = document.querySelector<HTMLElement>('.start-popup');
-  if (!startOpen) {
-    popup?.remove();
+function toggleStartMenu(forceClose = false) {
+  const existing = document.querySelector<HTMLElement>('.start-popup');
+  if (forceClose || startOpen) {
+    startOpen = false;
+    existing?.remove();
     return;
   }
-  popup = document.createElement('div');
-  popup.className = 'start-popup';
-  popup.innerHTML = `<div class="start-popup__head">VantuzFed OS</div><div class="start-popup__list"></div>`;
+  startOpen = true;
+  const popup = document.createElement('div');
+  popup.className = 'start-popup window';
+  popup.innerHTML = `<div class="title-bar"><div class="title-bar-text">VantuzFed OS</div></div><div class="window-body start-popup__list"></div>`;
   const list = popup.querySelector('.start-popup__list')!;
 
   for (const app of APPS) {
     const item = document.createElement('button');
     item.className = 'start-popup__item';
-    item.innerHTML = `<span class="ico">${app.icon}</span><span>${app.title}</span>`;
+    item.innerHTML = `<img src="${app.icon}" alt="" /><span>${app.title}</span>`;
     item.addEventListener('click', () => {
-      const mobile = window.matchMedia('(max-width: 760px)').matches;
-      if (app.kind === 'link') {
+      if (app.kind === 'action') {
+        toggleWinamp();
+      } else if (app.kind === 'link') {
         window.location.href = app.href!;
-        return;
-      }
-      if (mobile) {
-        openMobileApp(app.id);
       } else if (minimizedApps.has(app.id)) {
         restoreWindow(app.id);
       } else if (closedApps.has(app.id)) {
@@ -248,31 +232,35 @@ function toggleStartMenu() {
     document.addEventListener(
       'pointerdown',
       (e) => {
-        if (!popup?.contains(e.target as Node)) {
-          startOpen = false;
-          popup?.remove();
-        }
+        const target = e.target as Node;
+        const startBtn = document.getElementById('start_menu');
+        if (popup.contains(target) || startBtn?.contains(target)) return;
+        toggleStartMenu(true);
       },
       { once: true }
     );
   }, 0);
 }
 
-/* ------------------------- MOBILE ------------------------- */
+/* ------------------------- MOBILE (Windows CE / Windows Phone style) ------------------------- */
 
-function renderMobileHome() {
-  const grid = document.querySelector<HTMLElement>('.mobile-icon-grid');
+function renderMobileTiles() {
+  const grid = document.querySelector<HTMLElement>('.mobile-tiles');
   if (!grid) return;
   grid.innerHTML = '';
   for (const app of APPS) {
-    const btn = document.createElement('button');
-    btn.className = 'mobile-icon';
-    btn.innerHTML = `<span class="ico">${app.icon}</span><span>${app.title}</span>`;
-    btn.addEventListener('click', () => {
-      if (app.kind === 'link') window.location.href = app.href!;
+    if (app.id === 'utils') continue; // "Utils" is just a desktop folder window, apps show flat on mobile
+    const tile = document.createElement('button');
+    tile.type = 'button';
+    tile.className = 'tile' + (app.tileWide ? ' tile-wide' : '');
+    if (app.tileColor) tile.style.setProperty('--tile-color', app.tileColor);
+    tile.innerHTML = `<img src="${app.icon}" alt="" /><span>${app.title}</span>`;
+    tile.addEventListener('click', () => {
+      if (app.kind === 'action') toggleWinamp();
+      else if (app.kind === 'link') window.location.href = app.href!;
       else openMobileApp(app.id);
     });
-    grid.appendChild(btn);
+    grid.appendChild(tile);
   }
 }
 
@@ -280,18 +268,14 @@ function openMobileApp(id: string) {
   const app = APPS.find((a) => a.id === id);
   if (!app || app.kind !== 'window' || !app.content) return;
 
-  let screen = document.querySelector<HTMLElement>('.mobile-app-screen');
-  if (!screen) {
-    screen = document.createElement('div');
-    screen.className = 'mobile-app-screen';
-    document.getElementById('app')!.appendChild(screen);
-  }
-  screen.innerHTML = '';
-  const bar = buildTitleBar(app, { mobile: true });
-  const content = document.createElement('div');
-  content.className = 'app-content';
+  const screen = document.querySelector<HTMLElement>('.mobile-app-screen')!;
+  screen.innerHTML = `
+    <div class="ce-title-bar"><img src="${app.icon}" alt="" /><span>${app.title}</span></div>
+    <div class="ce-content"></div>
+  `;
+  const content = screen.querySelector<HTMLElement>('.ce-content')!;
+  if (app.centered) content.style.textAlign = 'center';
   content.innerHTML = app.content();
-  screen.append(bar, content);
   screen.classList.add('active');
 
   wireContentActions(content);
@@ -302,20 +286,82 @@ function closeMobileApp() {
   document.querySelector('.mobile-app-screen')?.classList.remove('active');
 }
 
+function renderClocks() {
+  const els = document.querySelectorAll<HTMLElement>('.js-clock');
+  const update = () => {
+    const now = new Date();
+    const text = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    els.forEach((el) => (el.textContent = text));
+  };
+  update();
+  setInterval(update, 15000);
+}
+
+/* ------------------------- MODE SWITCHING (desktop <-> mobile) ------------------------- */
+
+type Mode = 'desktop' | 'mobile';
+let manualOverride: Mode | null = null;
+
+function isNarrowViewport() {
+  return window.matchMedia('(max-width: 760px)').matches;
+}
+
+function currentMode(): Mode {
+  if (isNarrowViewport()) return 'mobile';
+  return manualOverride ?? 'desktop';
+}
+
+function applyMode() {
+  const mode = currentMode();
+  const app = document.getElementById('app')!;
+  app.classList.toggle('mode-mobile', mode === 'mobile');
+  app.classList.toggle('mode-desktop', mode === 'desktop');
+  if (mode === 'desktop') closeMobileApp();
+}
+
+function toggleMobilePreview() {
+  if (isNarrowViewport()) return; // a real phone-sized screen has no way back to desktop mode
+  manualOverride = currentMode() === 'mobile' ? 'desktop' : 'mobile';
+  applyMode();
+}
+
 /* ------------------------- INIT ------------------------- */
 
 export function initDesktopEnvironment() {
   const appRoot = document.getElementById('app')!;
   appRoot.innerHTML = `
-    <div class="desktop" id="desktop"></div>
-    <div class="mobile-home">
-      <div class="mobile-topbar"><span>VantuzFed OS</span><span class="mobile-clock"></span></div>
-      <div class="mobile-icon-grid"></div>
+    <div class="desktop-shell">
+      <div class="desktop" id="desktop"></div>
+      <div class="task-bar">
+        <button id="start_menu" type="button"></button>
+        <div class="task-bar_space"></div>
+        <button class="mobile-toggle" id="mobile-toggle" type="button" title="Mobile view">
+          <img src="/img/mob.png" alt="Mobile view" />
+        </button>
+        <div class="taskbar-notif"><img src="/img/taskbar_notif.png" alt="" /></div>
+      </div>
     </div>
-    <div class="task-bar">
-      <div id="start_menu" role="button" tabindex="0">Start</div>
-      <div class="task-bar_space"></div>
-      <div class="taskbar-clock"></div>
+    <div class="mobile-shell">
+      <div class="mobile-status-bar">
+        <div class="status-left">
+          <span class="status-signal"><span></span><span></span><span></span><span></span></span>
+          <span>VantuzFed Net</span>
+        </div>
+        <div class="status-right">
+          <span class="status-clock js-clock"></span>
+          <span class="status-battery"><i></i></span>
+        </div>
+      </div>
+      <div class="mobile-home-screen">
+        <div class="mobile-hero">VantuzFed<br />Mobile</div>
+        <div class="mobile-tiles"></div>
+      </div>
+      <div class="mobile-app-screen"></div>
+      <div class="mobile-softkeys">
+        <button class="softkey" id="softkey-back" type="button">\u2190 Back</button>
+        <div class="softkey-clock js-clock"></div>
+        <button class="softkey" id="softkey-home" type="button"><img src="/img/mob.png" alt="" /> Home</button>
+      </div>
     </div>
   `;
 
@@ -326,11 +372,18 @@ export function initDesktopEnvironment() {
   focusedId = APPS.find((a) => a.kind === 'window')?.id ?? null;
 
   renderTaskbar();
-  renderClock();
-  renderMobileHome();
+  renderMobileTiles();
+  renderClocks();
+  applyMode();
 
   document.getElementById('start_menu')!.addEventListener('click', (e) => {
     e.stopPropagation();
     toggleStartMenu();
   });
+
+  document.getElementById('mobile-toggle')!.addEventListener('click', toggleMobilePreview);
+  document.getElementById('softkey-back')!.addEventListener('click', closeMobileApp);
+  document.getElementById('softkey-home')!.addEventListener('click', closeMobileApp);
+
+  window.addEventListener('resize', applyMode);
 }

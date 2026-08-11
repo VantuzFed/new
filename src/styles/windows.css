@@ -1,6 +1,7 @@
-/* We rely on xp.css for authentic title-bar / button chrome (.window, .title-bar,
-   .title-bar-controls button[aria-label=Minimize|Maximize|Restore|Close]).
-   Only mobile needs a custom "Back" control, since that's not part of xp.css. */
+/* Title bar / buttons / window chrome are intentionally left to xp.css defaults.
+   Only things xp.css has no opinion about are styled here: positioning,
+   the mobile "Back" control, the taskbar/start-menu textures, and layout
+   utilities (widths, flex) that don't touch xp.css's own visual rules. */
 
 .title-bar-controls button[aria-label="Back"] {
   min-width: 21px;
@@ -29,7 +30,7 @@
   position: absolute;
   max-width: calc(100vw - 12px);
   transform-origin: top center;
-  perspective: 1000px;
+  perspective: 800px;
 }
 
 .windows.window.disabled,
@@ -38,181 +39,152 @@
 }
 
 .windows.window.opening {
-  animation: window-in 0.35s cubic-bezier(0.2, 0.7, 0.3, 1);
+  animation: slidein 1s ease-in-out, opac 0.8s ease-in;
 }
 
-@keyframes window-in {
-  0% {
+@keyframes slidein {
+  from {
+    perspective: 800px;
+    transform: rotateY(60deg);
+  }
+  to {
+    perspective: 0px;
+    transform: rotateY(0deg);
+  }
+}
+
+@keyframes opac {
+  from {
     opacity: 0;
-    transform: rotateX(35deg) scale(0.85);
   }
-  100% {
+  to {
     opacity: 1;
-    transform: rotateX(0deg) scale(1);
   }
 }
 
-.window-body {
-  font-size: 11px;
-}
-
-.window-body p {
-  margin: 6px 0;
-  font-size: 11px;
-}
-
-pre.crt {
-  color: #d6d6d6;
-  background: #000;
-  margin: 0;
-  padding: 10px;
-  font-family: "DosFont", "Courier New", monospace;
-  font-size: 12px;
-  line-height: 1.25;
-  overflow: auto;
-  white-space: pre;
-}
-
-.btn-link {
+/* Layout-only helpers (no color/border/font overrides — those stay xp.css defaults) */
+.link-list button,
+.link-list a {
   display: flex;
   align-items: center;
   gap: 6px;
   width: 100%;
-  min-height: 23px;
-  padding: 3px 10px;
   margin: 4px 0;
-  background: linear-gradient(180deg, #fff, #ecebe5 86%, #d8d0c4);
-  border: 1px solid #003c74;
-  border-radius: 3px;
-  font-size: 11px;
-  font-family: "Pixelated MS Sans Serif", Arial;
   text-decoration: none;
-  color: #111;
-  cursor: pointer;
-  box-sizing: border-box;
 }
 
-.btn-link:hover {
-  box-shadow: inset -1px 1px #fff0cf, inset 1px 2px #fdd889, inset -2px 2px #fbc761, inset 2px -2px #e5a01a;
+.link-list img {
+  image-rendering: pixelated;
 }
 
-.btn-link:active {
-  background: linear-gradient(180deg, #cdcac3, #e3e3db 8%, #e5e5de 94%, #f2f2f1);
-}
-
-.btn-link img {
-  width: 15px;
-  height: 15px;
-  object-fit: contain;
-}
-
-/* ---------- taskbar ---------- */
+/* ---------- taskbar (uses the site's own taskbar/start textures) ---------- */
 .task-bar {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
-  height: var(--taskbar-h);
+  height: 30px;
+  max-height: 30px;
+  width: 100%;
   display: flex;
-  align-items: stretch;
-  background: linear-gradient(180deg, #245edb, #1941a5 40%, #1941a5 60%, #0e2f82);
-  border-top: 1px solid #4f8dfa;
-  z-index: 100000;
   box-sizing: border-box;
+  background: url("/img/taskbar_back.png");
+  image-rendering: pixelated;
+  z-index: 10000000;
 }
 
 #start_menu {
-  width: 100px;
-  margin: 3px;
-  border-radius: 4px;
-  background: linear-gradient(180deg, #5cc65c, #2f9c2f 55%, #1f7a1f);
-  border: 1px solid #1a5c1a;
-  color: #fff;
-  font-weight: 800;
-  font-style: italic;
-  font-size: 12px;
-  font-family: "Pixelated MS Sans Serif", Arial;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
+  height: 30px;
+  width: 98px;
+  flex-shrink: 0;
+  border: none;
+  padding: 0;
   cursor: pointer;
+  background: url("/img/start_norm.png");
+  image-rendering: pixelated;
 }
-
+#start_menu:hover {
+  background: url("/img/start_hov.png");
+}
 #start_menu:active {
-  filter: brightness(0.9);
-}
-
-#start_menu::before {
-  content: "⊞";
-  font-style: normal;
-  font-size: 14px;
+  background: url("/img/start_press.png");
 }
 
 .task-bar_space {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
   flex: 1;
+  padding: 1px;
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 0 6px;
   overflow-x: auto;
 }
 
 .taskbar-item {
   height: 22px;
-  padding: 0 10px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 8px 0 4px;
+  border: 1px solid #1849b9;
   border-radius: 3px;
-  border: 1px solid #2255b5;
-  background: linear-gradient(180deg, #4f86e8, #2a5cc0);
+  background: linear-gradient(180deg, #5c8ef2 0%, #3f76e6 45%, #2f61d6 46%, #3a72e8 100%);
   color: #fff;
+  font-family: Tahoma, "Pixelated MS Sans Serif", Arial, sans-serif;
   font-size: 11px;
-  font-family: "Pixelated MS Sans Serif", Arial;
-  display: flex;
-  align-items: center;
+  font-weight: 400;
   white-space: nowrap;
+  max-width: 160px;
+  overflow: hidden;
   cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
-.taskbar-item.is-minimized {
-  background: linear-gradient(180deg, #2a5cc0, #1941a5);
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+.taskbar-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.taskbar-clock {
-  color: #fff;
-  font-size: 11px;
-  font-family: "Pixelated MS Sans Serif", Arial;
-  padding: 0 12px;
-  border-left: 1px solid #4f8dfa;
+.taskbar-item img {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  flex-shrink: 0;
+}
+
+.taskbar-item.is-active {
+  background: linear-gradient(180deg, #1c47b0 0%, #2a5cc9 45%, #1c47b0 100%);
+  border-color: #0f2f7a;
+  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.55);
+  font-weight: 700;
+}
+
+.taskbar-notif {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
+  image-rendering: pixelated;
 }
 
 /* ---------- start menu popup ---------- */
 .start-popup {
   position: fixed;
   left: 4px;
-  bottom: calc(var(--taskbar-h) + 4px);
+  bottom: 32px;
   width: 240px;
-  background: #ece9d8;
-  border: 1px solid #0a3f9e;
-  border-radius: 8px 8px 4px 4px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  overflow: hidden;
   z-index: 100001;
-  font-family: "Pixelated MS Sans Serif", Arial;
 }
 
 .start-popup__head {
-  background: linear-gradient(180deg, #2c72e0, #1854ce);
-  color: #fff;
-  font-weight: 700;
   padding: 8px 10px;
-  font-size: 12px;
+  font-weight: 700;
 }
 
 .start-popup__list {
-  padding: 4px;
   max-height: 60vh;
   overflow-y: auto;
 }
@@ -222,156 +194,23 @@ pre.crt {
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 6px 8px;
-  border: none;
-  background: transparent;
-  font-size: 11px;
   text-align: left;
-  border-radius: 4px;
-  cursor: pointer;
+  margin: 2px 0;
 }
 
-.start-popup__item:hover {
-  background: #316ac5;
-  color: #fff;
-}
-
-.start-popup__item .ico {
+.start-popup__item img {
   width: 18px;
   height: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
+  object-fit: contain;
+  image-rendering: pixelated;
 }
 
 /* ---------- mobile home screen ---------- */
-.mobile-home {
-  display: none;
-}
+/* Mobile UI now lives entirely in mobile.css and is driven by JS mode
+   classes (#app.mode-mobile / #app.mode-desktop), not a raw media query. */
 
-.mobile-topbar {
-  display: none;
-}
-
-.mobile-app-screen {
-  display: none;
-}
-
-@media (max-width: 760px), (pointer: coarse) and (max-width: 900px) {
-  .windows.window {
-    display: none !important;
-  }
-
-  .mobile-home {
-    display: block;
-    position: absolute;
-    inset: 0;
-    bottom: var(--taskbar-h-mobile);
-    overflow-y: auto;
-    padding: 18px 14px 30px;
-  }
-
-  .mobile-topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    color: #fff;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.6);
-    padding: 10px 4px 4px;
-    font-size: 12px;
-    font-family: "Pixelated MS Sans Serif", Arial;
-  }
-
-  .mobile-icon-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
-    gap: 18px 8px;
-    margin-top: 10px;
-  }
-
-  .mobile-icon {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    background: none;
-    border: none;
-    color: #fff;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
-    font-size: 11px;
-    font-family: "Pixelated MS Sans Serif", Arial;
-    padding: 4px;
-  }
-
-  .mobile-icon .ico {
-    width: 52px;
-    height: 52px;
-    border-radius: 12px;
-    background: linear-gradient(180deg, #4f97ff, #1854ce);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 26px;
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
-  }
-
-  .mobile-icon:active .ico {
-    filter: brightness(0.85);
-  }
-
-  .task-bar {
-    height: var(--taskbar-h-mobile);
-    padding-bottom: var(--safe-bottom);
-  }
-
-  #start_menu {
-    width: 84px;
-    font-size: 12px;
-  }
-
-  .mobile-app-screen.active {
-    display: flex;
-    flex-direction: column;
-    position: fixed;
-    inset: 0;
-    bottom: var(--taskbar-h-mobile);
-    z-index: 5000;
-    background: #ece9d8;
-    animation: app-in 0.22s ease-out;
-  }
-
-  .mobile-app-screen .title-bar {
-    border-radius: 0;
-    flex: 0 0 auto;
-    padding-top: max(3px, env(safe-area-inset-top));
-  }
-
-  .mobile-app-screen .app-content {
-    flex: 1;
-    overflow-y: auto;
-    padding: 14px;
-    font-size: 12px;
-  }
-
+@media (max-width: 760px) {
   .start-popup {
     width: min(320px, 90vw);
-  }
-}
-
-@keyframes app-in {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@media (min-width: 761px) {
-  .mobile-only {
-    display: none !important;
   }
 }

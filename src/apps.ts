@@ -1,13 +1,15 @@
-export type AppKind = 'window' | 'link';
+export type AppKind = 'window' | 'link' | 'action';
 
 export interface AppDef {
   id: string;
   title: string;
-  icon: string; // emoji used as icon glyph
+  icon: string; // path to an icon image
   kind: AppKind;
   href?: string; // for kind === 'link'
-  external?: boolean;
-  desktop?: { width: number; top: number; left: number; column: 'one' | 'two' | 'three' };
+  desktop?: { width: number; top: number; left: number };
+  centered?: boolean;
+  tileColor?: string; // background color for the mobile (WP/CE-style) tile
+  tileWide?: boolean; // renders as a double-width tile on the mobile home screen
   content?: () => string;
   mount?: (root: HTMLElement) => void | Promise<void>;
 }
@@ -26,72 +28,80 @@ C:\\WINDOWS\\SYSTEM32&gt;
  ::. ###:::: ##:::: ##: ##::. ##:::: ##::::. #######:: ########: ##::::::: ########: ########::
 :::...:::::..:::::..::..::::..:::::..::::::.......:::........::..::::::::........::........:::`;
 
-const LINKS: { label: string; href: string; icon: string }[] = [
-  { label: 'My Telegram', href: 'https://t.me/vantuzfed', icon: '\u2708\uFE0F' },
-  { label: 'My YouTube', href: 'https://www.youtube.com/@vantuzfed', icon: '\u25B6\uFE0F' },
-  { label: 'My Steam Rus', href: 'https://steamcommunity.com/id/vantuzfed', icon: '\u{1F3AE}' },
-  { label: 'My Steam TL', href: 'https://steamcommunity.com/id/vantuztur', icon: '\u{1F3AE}' },
-  { label: 'My Twitter', href: 'https://twitter.com/vantuzfed', icon: '\u{1F426}' },
-  { label: 'My Github', href: 'https://github.com/VantuzFed', icon: '\u{1F419}' },
-  { label: 'My Reddit', href: 'https://www.reddit.com/user/VantuzFed', icon: '\u{1F47D}' },
-  { label: 'My SoundCloud', href: 'https://soundcloud.com/vantuzfed', icon: '\u{1F3B5}' },
+const LINKS: { label: string; href: string; icon: string; w: number; h: number }[] = [
+  { label: 'My Telegram', href: 'https://t.me/vantuzfed', icon: '/img/tel.png', w: 13, h: 13 },
+  { label: 'My YouTube', href: 'https://www.youtube.com/@vantuzfed', icon: '/img/you.png', w: 18, h: 13 },
+  { label: 'My Steam Rus', href: 'https://steamcommunity.com/id/vantuzfed', icon: '/img/steam.png', w: 13, h: 13 },
+  { label: 'My Steam TL', href: 'https://steamcommunity.com/id/vantuztur', icon: '/img/steam.png', w: 13, h: 13 },
+  { label: 'My Twitter', href: 'https://twitter.com/vantuzfed', icon: '/img/twit.png', w: 16, h: 13 },
+  { label: 'My Github', href: 'https://github.com/VantuzFed', icon: '/img/git.png', w: 14, h: 13 },
+  { label: 'My Reddit', href: 'https://www.reddit.com/user/VantuzFed', icon: '/img/reddit.png', w: 14, h: 13 },
+  { label: 'My SoundCloud', href: 'https://soundcloud.com/vantuzfed', icon: '/img/sound.png', w: 14, h: 13 },
 ];
 
 export const APPS: AppDef[] = [
   {
     id: 'cmd',
     title: 'Command Prompt',
-    icon: '\u{1F5A5}\uFE0F',
+    icon: '/img/folder.png',
     kind: 'window',
-    desktop: { width: 870, top: 5, left: 40, column: 'one' },
-    content: () => `<pre class="crt">${CMD_ASCII}</pre>`,
+    desktop: { width: 870, top: 5, left: 40 },
+    tileColor: '#1BA1E2',
+    tileWide: true,
+    content: () => `<pre>${CMD_ASCII}</pre>`,
   },
   {
     id: 'links',
     title: 'Links',
-    icon: '\u{1F517}',
+    icon: '/img/folder.png',
     kind: 'window',
-    desktop: { width: 230, top: 340, left: 40, column: 'one' },
+    desktop: { width: 230, top: 340, left: 40 },
+    tileColor: '#FA6800',
     content: () =>
-      LINKS.map(
+      `<div class="link-list">${LINKS.map(
         (l) =>
-          `<a class="btn-link" href="${l.href}" target="_blank" rel="noopener noreferrer"><span>${l.icon}</span>${l.label}</a>`
-      ).join(''),
+          `<button type="button" data-nav="${l.href}"><img src="${l.icon}" width="${l.w}" height="${l.h}" alt="" /> ${l.label}</button>`
+      ).join('')}</div>`,
   },
   {
     id: 'utils',
     title: 'Utils',
-    icon: '\u{1F9F0}',
+    icon: '/img/folder.png',
     kind: 'window',
-    desktop: { width: 230, top: 340, left: 300, column: 'two' },
+    desktop: { width: 230, top: 340, left: 300 },
     content: () => `
-      <a class="btn-link" href="/gallery.html"><span>\u{1F5BC}\uFE0F</span> Gallery</a>
-      <a class="btn-link" href="/cube.html"><span>\u{1F9CA}</span> Block Cube</a>
-      <a class="btn-link" href="/threed.html"><span>\u{1F300}</span> 3D Demo</a>
-      <button class="btn-link" type="button" data-open-app="changelog"><span>\u{1F4DC}</span> Changelog</button>
-      <button class="btn-link" type="button" data-open-app="winamp"><span>\u{1F3B6}</span> Winamp</button>
+      <div class="link-list">
+        <button type="button" data-nav="/gallery.html"><img src="/img/pic.png" width="14" height="13" alt="" /> Gallery</button>
+        <button type="button" data-nav="/cube.html"><img src="/img/grass_block_top.png" width="14" height="13" alt="" /> Block Cube</button>
+        <button type="button" data-nav="/threed.html"><img src="/img/folder.png" width="14" height="13" alt="" /> 3D Demo</button>
+        <button type="button" data-open-app="changelog"><img src="/img/folder.png" width="14" height="13" alt="" /> Changelog</button>
+        <button type="button" data-winamp-trigger><img src="/img/winamp.png" width="14" height="13" alt="" /> Winamp</button>
+      </div>
     `,
   },
   {
     id: 'minecraft',
     title: 'Minecraft Server',
-    icon: '\u{1F7E9}',
+    icon: '/img/grass_block_top.png',
     kind: 'window',
-    desktop: { width: 400, top: 340, left: 560, column: 'three' },
+    desktop: { width: 400, top: 340, left: 560 },
+    centered: true,
+    tileColor: '#60A917',
+    tileWide: true,
     content: () => `
-      <div style="text-align:center;">
-        <img data-mc-icon style="display:none; width:64px; height:64px; image-rendering:pixelated;" alt="server icon" />
+      <h4>
+        <img data-mc-icon style="display:none; image-rendering:pixelated;" alt="server icon" />
         <p data-mc-ip></p>
         <p data-mc-version></p>
         <p data-mc-loading><progress></progress></p>
         <p data-mc-players></p>
         <p data-mc-status></p>
-        <p><input data-mc-input type="text" value="hypixel.net" style="width:80%;" /></p>
-        <p>
-          <button class="btn-link" style="display:inline-block;width:auto;" data-mc-refresh type="button">Refresh</button>
-          <button class="btn-link" style="display:inline-block;width:auto;" data-mc-reset type="button">Reset</button>
-        </p>
-      </div>
+      </h4>
+      <p><input data-mc-input type="text" value="hypixel.net" /></p>
+      <p>
+        <button data-mc-refresh type="button">Refresh</button>
+        <button data-mc-reset type="button">Reset</button>
+      </p>
     `,
     mount: async (root) => {
       const { mountMinecraft } = await import('./features/minecraft');
@@ -101,48 +111,47 @@ export const APPS: AppDef[] = [
   {
     id: 'changelog',
     title: 'Changelog',
-    icon: '\u{1F4DC}',
+    icon: '/img/folder.png',
     kind: 'window',
-    desktop: { width: 500, top: 120, left: 900, column: 'three' },
+    desktop: { width: 500, top: 120, left: 900 },
+    tileColor: '#A200FF',
     content: () =>
-      `<pre data-changelog-text style="max-height:60vh; min-height:200px; overflow:auto; white-space:pre-wrap; background:#fff; color:#000; padding:10px; border:1px solid #999;"></pre>`,
+      `<pre data-changelog-text style="height:380px; width:100%; min-height:200px; overflow:scroll; color:#000; background:#fff; resize:both; user-select:text;"></pre>`,
     mount: async (root) => {
       const { mountChangelog } = await import('./features/changelog');
       mountChangelog(root);
     },
   },
   {
-    id: 'winamp',
-    title: 'Winamp',
-    icon: '\u{1F3B6}',
-    kind: 'window',
-    desktop: { width: 280, top: 5, left: 950, column: 'three' },
-    content: () => `<div data-winamp-holder style="min-height:120px;"></div>`,
-    mount: async (root) => {
-      const { mountWinamp } = await import('./features/winamp');
-      mountWinamp(root);
-    },
-  },
-  {
     id: 'gallery',
     title: 'Gallery',
-    icon: '\u{1F5BC}\uFE0F',
+    icon: '/img/pic.png',
     kind: 'link',
     href: '/gallery.html',
+    tileColor: '#2FB6C4',
   },
   {
     id: 'cube',
     title: 'Block Cube',
-    icon: '\u{1F9CA}',
+    icon: '/img/grass_block_top.png',
     kind: 'link',
     href: '/cube.html',
+    tileColor: '#825A2C',
   },
   {
     id: 'threed',
     title: '3D Demo',
-    icon: '\u{1F300}',
+    icon: '/img/folder.png',
     kind: 'link',
     href: '/threed.html',
+    tileColor: '#00ABA9',
+  },
+  {
+    id: 'winamp',
+    title: 'Winamp',
+    icon: '/img/winamp.png',
+    kind: 'action',
+    tileColor: '#E51400',
   },
 ];
 
