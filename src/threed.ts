@@ -2,12 +2,18 @@ import * as THREE from 'three';
 import './styles/base.css';
 
 document.getElementById('app')!.innerHTML = `
-  <a href="/index.html" style="position:fixed; top:14px; left:14px; z-index:10; background:rgba(0,0,0,.55); color:#fff; padding:8px 14px; border-radius:6px; text-decoration:none; font-size:13px;">\u2190 Back</a>
+  <a href="/index.html" class="back-btn" aria-label="Back">\u2190 Back</a>
 `;
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(0xdddddd, 1);
+Object.assign(renderer.domElement.style, {
+  position: 'fixed',
+  inset: '0',
+  display: 'block',
+});
 document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();

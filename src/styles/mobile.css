@@ -32,16 +32,41 @@
   inset: 0;
   display: flex;
   flex-direction: column;
-  background:
-    radial-gradient(circle at 15% 8%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 22%),
-    radial-gradient(circle at 85% 14%, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0) 20%),
-    linear-gradient(180deg, #eaf7ff 0%, #b9e6ff 18%, #6fc4f0 38%, #2f9fe0 58%, #1c78c9 78%, #0e4f9c 100%);
   color: #0a2a4a;
   font-family: "Pixelated MS Sans Serif", Tahoma, Arial, sans-serif;
   opacity: 0;
   transform: translateY(8%);
   transition: transform 0.4s cubic-bezier(0.5, 0, 0.2, 1), opacity 0.35s ease;
   pointer-events: none;
+  overflow: hidden;
+}
+
+/* Same wallpaper as the desktop, just zoomed and blurred — and that
+   zoom/blur animates in step with everything else during the transition. */
+.mobile-bg {
+  position: absolute;
+  inset: -20px;
+  z-index: 0;
+  background: url("/img/bliss.jpg") center top / cover no-repeat;
+  filter: blur(0px) brightness(0.95);
+  transform: scale(1);
+  transition: filter 0.45s cubic-bezier(0.5, 0, 0.2, 1), transform 0.45s cubic-bezier(0.5, 0, 0.2, 1);
+}
+.mobile-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(10, 30, 60, 0.15), rgba(10, 30, 60, 0.35));
+}
+
+#app.mode-mobile .mobile-bg {
+  filter: blur(9px) brightness(0.8);
+  transform: scale(1.18);
+}
+
+.mobile-shell > *:not(.mobile-bg) {
+  position: relative;
+  z-index: 1;
 }
 
 /* ---- mode switching ---- */
@@ -142,6 +167,7 @@
 
 .mobile-status-bar .status-clock {
   font-variant-numeric: tabular-nums;
+  cursor: pointer;
 }
 
 .mobile-status-bar .status-left {
@@ -161,6 +187,10 @@
   flex: 1 1 auto;
   overflow-y: auto;
   padding: 14px 10px 20px;
+}
+
+.mobile-home-screen.is-hidden {
+  display: none;
 }
 
 .mobile-hero {
@@ -200,10 +230,12 @@
   background: linear-gradient(
     180deg,
     color-mix(in srgb, var(--tile-color) 55%, #fff) 0%,
-    var(--tile-color) 42%,
-    var(--tile-color) 60%,
-    color-mix(in srgb, var(--tile-color) 70%, #000) 100%
+    color-mix(in srgb, var(--tile-color) 88%, transparent) 42%,
+    color-mix(in srgb, var(--tile-color) 88%, transparent) 60%,
+    color-mix(in srgb, var(--tile-color) 65%, #000) 100%
   );
+  backdrop-filter: blur(8px) saturate(1.3);
+  -webkit-backdrop-filter: blur(8px) saturate(1.3);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.6),
     inset 0 -6px 10px rgba(0, 0, 0, 0.25),
@@ -251,7 +283,7 @@
   transform: scale(0.98);
 }
 
-.tile img {
+.tile .tile-icon {
   width: 30px;
   height: 30px;
   object-fit: contain;
@@ -261,10 +293,35 @@
   z-index: 1;
 }
 
-.tile.tile-wide img {
+.tile.tile-wide .tile-icon {
   width: 34px;
   height: 34px;
   margin-right: 4px;
+}
+
+/* Oversized, semi-transparent duplicate of the same icon, bleeding off the
+   tile's edge — fills the flat empty space the way real WP tiles rarely
+   stayed empty (peek/badge art, etc). */
+.tile .tile-icon-ghost {
+  position: absolute;
+  right: -16px;
+  bottom: -16px;
+  width: 108px;
+  height: 108px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  opacity: 0.32;
+  filter: brightness(0) invert(1);
+  pointer-events: none;
+  z-index: 0;
+  transform: rotate(-6deg);
+}
+
+.tile.tile-wide .tile-icon-ghost {
+  right: 10px;
+  bottom: -26px;
+  width: 132px;
+  height: 132px;
 }
 
 .tile span {
@@ -279,12 +336,11 @@
 
 /* ---- app screen (Pocket PC style) ---- */
 .mobile-app-screen {
-  position: absolute;
-  inset: 0;
+  flex: 1 1 auto;
   display: none;
   flex-direction: column;
   background: linear-gradient(180deg, #eef6fb 0%, #dcecf6 100%);
-  z-index: 20;
+  overflow: hidden;
 }
 
 .mobile-app-screen.active {
@@ -344,6 +400,7 @@
   font-size: 13px;
   color: #111;
   position: relative;
+  overflow: hidden;
   cursor: pointer;
 }
 .ce-content .link-list button:active,
@@ -357,6 +414,7 @@
   right: 12px;
   color: #8a8578;
   font-size: 16px;
+  z-index: 1;
 }
 .ce-content .link-list img {
   width: 18px;
@@ -364,6 +422,27 @@
   object-fit: contain;
   image-rendering: pixelated;
   flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+.ce-content .link-list span {
+  position: relative;
+  z-index: 1;
+}
+
+/* Decorative oversized, faded duplicate of the row's own icon — fills the
+   empty space in the button instead of leaving it flat and bare. */
+.ce-content .link-list .row-icon-ghost {
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  width: 54px;
+  height: 54px;
+  transform: translateY(-50%);
+  opacity: 0.1;
+  filter: brightness(0);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .ce-content h4 {
@@ -393,12 +472,136 @@
   background: linear-gradient(180deg, #eaf2ff, #b9d3f5);
   font-size: 12px;
 }
-.ce-content pre {
-  margin: 8px 12px !important;
-  width: auto !important;
+/* Command Prompt / Changelog need their own treatment: instead of being
+   squeezed into the regular padded CE content, they fill the screen
+   edge-to-edge (set via app.mobileFullBleed -> .ce-content--full). */
+.ce-content.ce-content--full {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  height: 100%;
+}
+.ce-content.ce-content--full > pre {
+  flex: 1 1 auto;
+  margin: 0 !important;
+  width: 100% !important;
   max-width: none;
+  height: 100%;
+  box-sizing: border-box;
+  border: none;
+  border-radius: 0;
+}
+
+.ce-content .cmd-pre-mobile {
+  overflow-x: auto;
+  overflow-y: auto;
+  white-space: pre;
+  font-size: 7px;
+  line-height: 1.4;
+  padding: 12px 10px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ce-content .changelog-mobile {
+  overflow-x: hidden;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: Tahoma, Arial, sans-serif !important;
+  font-size: 12.5px;
+  line-height: 1.55;
+  padding: 14px;
+  background: #fff;
+  color: #222;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ---- Minecraft status rows (mobile) ---- */
+.mc-mobile-hero {
+  display: flex;
+  justify-content: center;
+  padding: 18px 0 6px;
+}
+.mc-mobile-hero img {
+  width: 56px;
+  height: 56px;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+.mc-mobile-controls {
+  padding: 12px;
+}
+.mc-mobile-controls input[type="text"] {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 8px;
+  padding: 8px;
   border: 1px solid #8a8578;
-  font-size: 11px;
+  font-size: 13px;
+}
+.mc-mobile-buttons {
+  display: flex;
+  gap: 8px;
+}
+.mc-mobile-buttons button {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #4a6fa5;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #eaf2ff, #b9d3f5);
+  font-size: 12px;
+}
+
+/* ---- Gallery (shared by desktop window-body and mobile ce-content) ---- */
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 6px;
+  padding: 4px;
+}
+.gallery-grid--mobile {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 8px;
+}
+.gallery-thumb {
+  all: unset;
+  display: block;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border: 1px solid #8a8578;
+  cursor: pointer;
+}
+.gallery-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.gallery-thumb:active {
+  filter: brightness(0.8);
+}
+
+.gallery-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.88);
+  padding: 20px;
+  box-sizing: border-box;
+  cursor: zoom-out;
+}
+.gallery-lightbox.active {
+  display: flex;
+}
+.gallery-lightbox img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
 }
 
 /* ---- soft-key bar (glossy Aero taskbar look) ---- */
@@ -457,29 +660,8 @@
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
   border-left: 1px solid rgba(255, 255, 255, 0.4);
   border-right: 1px solid rgba(255, 255, 255, 0.4);
-}
-
-/* ---- mobile-mode toggle button on the desktop taskbar ---- */
-.mobile-toggle {
-  flex-shrink: 0;
-  width: 26px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #1849b9;
-  border-radius: 3px;
-  background: linear-gradient(180deg, #5c8ef2 0%, #3f76e6 45%, #2f61d6 46%, #3a72e8 100%);
   cursor: pointer;
 }
-.mobile-toggle img {
-  width: 14px;
-  height: 14px;
-  image-rendering: pixelated;
-}
-
-@media (max-width: 760px), (pointer: coarse) and (max-width: 900px) {
-  .mobile-toggle {
-    display: none;
-  }
+.softkey-clock:active {
+  background: rgba(255, 255, 255, 0.15);
 }

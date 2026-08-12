@@ -60,6 +60,19 @@ function playOpenAnimation(win: HTMLElement) {
   win.classList.add('opening');
 }
 
+/** Adds an oversized, faded duplicate of each list-row icon as a decorative
+ * watermark, so mobile buttons don't look so flat/empty. Mobile-only. */
+function enrichMobileButtons(root: HTMLElement) {
+  root.querySelectorAll<HTMLImageElement>('.link-list img').forEach((img) => {
+    const ghost = img.cloneNode(true) as HTMLImageElement;
+    ghost.className = 'row-icon-ghost';
+    ghost.removeAttribute('width');
+    ghost.removeAttribute('height');
+    ghost.setAttribute('aria-hidden', 'true');
+    img.closest('button, a')?.appendChild(ghost);
+  });
+}
+
 /* ------------------------- DESKTOP WINDOWS ------------------------- */
 
 function buildDesktopWindow(app: AppDef, desktop: HTMLElement) {
@@ -249,12 +262,16 @@ function renderMobileTiles() {
   if (!grid) return;
   grid.innerHTML = '';
   for (const app of APPS) {
-    if (app.id === 'utils') continue; // "Utils" is just a desktop folder window, apps show flat on mobile
+    if (app.id === 'utils' || app.id === 'winamp') continue; // "Utils" is a desktop-only folder window; Winamp has no touch-friendly mobile UI
     const tile = document.createElement('button');
     tile.type = 'button';
     tile.className = 'tile' + (app.tileWide ? ' tile-wide' : '');
     if (app.tileColor) tile.style.setProperty('--tile-color', app.tileColor);
-    tile.innerHTML = `<img src="${app.icon}" alt="" /><span>${app.title}</span>`;
+    tile.innerHTML = `
+      <img class="tile-icon-ghost" src="${app.icon}" alt="" aria-hidden="true" />
+      <img class="tile-icon" src="${app.icon}" alt="" />
+      <span>${app.title}</span>
+    `;
     tile.addEventListener('click', () => {
       if (app.kind === 'action') toggleWinamp();
       else if (app.kind === 'link') window.location.href = app.href!;
@@ -275,40 +292,58 @@ function openMobileApp(id: string) {
   `;
   const content = screen.querySelector<HTMLElement>('.ce-content')!;
   if (app.centered) content.style.textAlign = 'center';
-  content.innerHTML = app.content();
+  if (app.mobileFullBleed) content.classList.add('ce-content--full');
+  content.innerHTML = (app.mobileContent ?? app.content)();
   screen.classList.add('active');
+  document.querySelector('.mobile-home-screen')?.classList.add('is-hidden');
 
   wireContentActions(content);
+  enrichMobileButtons(content);
   app.mount?.(content);
 }
 
 function closeMobileApp() {
   document.querySelector('.mobile-app-screen')?.classList.remove('active');
+  document.querySelector('.mobile-home-screen')?.classList.remove('is-hidden');
+}
+
+let is24HourFormat = true;
+
+function formatClockTime(date: Date) {
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: !is24HourFormat });
+}
+
+function updateClocks() {
+  const text = formatClockTime(new Date());
+  document.querySelectorAll<HTMLElement>('.js-clock').forEach((el) => (el.textContent = text));
+}
+
+function toggleClockFormat() {
+  is24HourFormat = !is24HourFormat;
+  updateClocks();
 }
 
 function renderClocks() {
-  const els = document.querySelectorAll<HTMLElement>('.js-clock');
-  const update = () => {
-    const now = new Date();
-    const text = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    els.forEach((el) => (el.textContent = text));
-  };
-  update();
-  setInterval(update, 15000);
+  updateClocks();
+  setInterval(updateClocks, 15000);
+  document.querySelectorAll<HTMLElement>('.js-clock').forEach((el) => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleClockFormat();
+    });
+  });
 }
 
 /* ------------------------- MODE SWITCHING (desktop <-> mobile) ------------------------- */
 
 type Mode = 'desktop' | 'mobile';
-let manualOverride: Mode | null = null;
 
 function isNarrowViewport() {
   return window.matchMedia('(max-width: 760px)').matches;
 }
 
 function currentMode(): Mode {
-  if (isNarrowViewport()) return 'mobile';
-  return manualOverride ?? 'desktop';
+  return isNarrowViewport() ? 'mobile' : 'desktop';
 }
 
 function applyMode() {
@@ -317,12 +352,6 @@ function applyMode() {
   app.classList.toggle('mode-mobile', mode === 'mobile');
   app.classList.toggle('mode-desktop', mode === 'desktop');
   if (mode === 'desktop') closeMobileApp();
-}
-
-function toggleMobilePreview() {
-  if (isNarrowViewport()) return; // a real phone-sized screen has no way back to desktop mode
-  manualOverride = currentMode() === 'mobile' ? 'desktop' : 'mobile';
-  applyMode();
 }
 
 /* ------------------------- INIT ------------------------- */
@@ -335,13 +364,12 @@ export function initDesktopEnvironment() {
       <div class="task-bar">
         <button id="start_menu" type="button"></button>
         <div class="task-bar_space"></div>
-        <button class="mobile-toggle" id="mobile-toggle" type="button" title="Mobile view">
-          <img src="/img/mob.png" alt="Mobile view" />
-        </button>
         <div class="taskbar-notif"><img src="/img/taskbar_notif.png" alt="" /></div>
+        <button class="taskbar-clock js-clock" type="button" title="Toggle 12/24h"></button>
       </div>
     </div>
     <div class="mobile-shell">
+      <div class="mobile-bg"></div>
       <div class="mobile-status-bar">
         <div class="status-left">
           <span class="status-signal"><span></span><span></span><span></span><span></span></span>
@@ -381,7 +409,6 @@ export function initDesktopEnvironment() {
     toggleStartMenu();
   });
 
-  document.getElementById('mobile-toggle')!.addEventListener('click', toggleMobilePreview);
   document.getElementById('softkey-back')!.addEventListener('click', closeMobileApp);
   document.getElementById('softkey-home')!.addEventListener('click', closeMobileApp);
 

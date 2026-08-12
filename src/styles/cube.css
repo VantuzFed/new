@@ -14,18 +14,6 @@ body {
   padding: 24px;
 }
 
-.back-btn {
-  position: fixed;
-  top: 14px;
-  left: 14px;
-  background: rgba(0, 0, 0, 0.55);
-  color: #fff;
-  padding: 8px 14px;
-  border-radius: 6px;
-  text-decoration: none;
-  font-size: 13px;
-}
-
 .scene {
   width: clamp(140px, 40vw, 220px);
   height: clamp(140px, 40vw, 220px);

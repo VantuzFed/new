@@ -167,7 +167,27 @@
   flex-shrink: 0;
   display: flex;
   align-items: center;
+  padding: 0 6px;
   image-rendering: pixelated;
+}
+
+.taskbar-clock {
+  flex-shrink: 0;
+  height: 100%;
+  padding: 0 10px;
+  border: none;
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
+  background: transparent;
+  color: #fff;
+  font-size: 11px;
+  font-family: "Pixelated MS Sans Serif", Arial;
+  cursor: pointer;
+}
+.taskbar-clock:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+.taskbar-clock:active {
+  background: rgba(0, 0, 0, 0.15);
 }
 
 /* ---------- start menu popup ---------- */

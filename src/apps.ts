@@ -1,3 +1,5 @@
+import { galleryGridHtml, mountGallery } from './features/gallery';
+
 export type AppKind = 'window' | 'link' | 'action';
 
 export interface AppDef {
@@ -10,7 +12,12 @@ export interface AppDef {
   centered?: boolean;
   tileColor?: string; // background color for the mobile (WP/CE-style) tile
   tileWide?: boolean; // renders as a double-width tile on the mobile home screen
+  /** Mobile app screens normally sit inside the padded CE content area — set
+   * this for apps (terminal, changelog) that need to fill it edge-to-edge. */
+  mobileFullBleed?: boolean;
   content?: () => string;
+  /** Falls back to `content()` when omitted. */
+  mobileContent?: () => string;
   mount?: (root: HTMLElement) => void | Promise<void>;
 }
 
@@ -39,6 +46,12 @@ const LINKS: { label: string; href: string; icon: string; w: number; h: number }
   { label: 'My SoundCloud', href: 'https://soundcloud.com/vantuzfed', icon: '/img/sound.png', w: 14, h: 13 },
 ];
 
+/** The Minecraft-server status rows: shared markup shape (same data-mc-*
+ * hooks) for both desktop and mobile — only the layout around them differs. */
+function mcRow(icon: string, attr: string) {
+  return `<div><img src="${icon}" width="14" height="13" alt="" /><span ${attr}></span></div>`;
+}
+
 export const APPS: AppDef[] = [
   {
     id: 'cmd',
@@ -48,7 +61,9 @@ export const APPS: AppDef[] = [
     desktop: { width: 870, top: 5, left: 40 },
     tileColor: '#1BA1E2',
     tileWide: true,
+    mobileFullBleed: true,
     content: () => `<pre>${CMD_ASCII}</pre>`,
+    mobileContent: () => `<pre class="cmd-pre-mobile">${CMD_ASCII}</pre>`,
   },
   {
     id: 'links',
@@ -71,7 +86,7 @@ export const APPS: AppDef[] = [
     desktop: { width: 230, top: 340, left: 300 },
     content: () => `
       <div class="link-list">
-        <button type="button" data-nav="/gallery.html"><img src="/img/pic.png" width="14" height="13" alt="" /> Gallery</button>
+        <button type="button" data-open-app="gallery"><img src="/img/pic.png" width="14" height="13" alt="" /> Gallery</button>
         <button type="button" data-nav="/cube.html"><img src="/img/grass_block_top.png" width="14" height="13" alt="" /> Block Cube</button>
         <button type="button" data-nav="/threed.html"><img src="/img/folder.png" width="14" height="13" alt="" /> 3D Demo</button>
         <button type="button" data-open-app="changelog"><img src="/img/folder.png" width="14" height="13" alt="" /> Changelog</button>
@@ -103,6 +118,25 @@ export const APPS: AppDef[] = [
         <button data-mc-reset type="button">Reset</button>
       </p>
     `,
+    mobileContent: () => `
+      <div class="mc-mobile-hero">
+        <img data-mc-icon style="display:none;" alt="server icon" />
+      </div>
+      <p data-mc-loading style="text-align:center;"><progress></progress></p>
+      <div class="link-list">
+        ${mcRow('/img/folder.png', 'data-mc-ip')}
+        ${mcRow('/img/folder.png', 'data-mc-version')}
+        ${mcRow('/img/folder.png', 'data-mc-players')}
+        ${mcRow('/img/folder.png', 'data-mc-status')}
+      </div>
+      <div class="mc-mobile-controls">
+        <input data-mc-input type="text" value="hypixel.net" />
+        <div class="mc-mobile-buttons">
+          <button data-mc-refresh type="button">Refresh</button>
+          <button data-mc-reset type="button">Reset</button>
+        </div>
+      </div>
+    `,
     mount: async (root) => {
       const { mountMinecraft } = await import('./features/minecraft');
       mountMinecraft(root);
@@ -115,8 +149,10 @@ export const APPS: AppDef[] = [
     kind: 'window',
     desktop: { width: 500, top: 120, left: 900 },
     tileColor: '#A200FF',
+    mobileFullBleed: true,
     content: () =>
       `<pre data-changelog-text style="height:380px; width:100%; min-height:200px; overflow:scroll; color:#000; background:#fff; resize:both; user-select:text;"></pre>`,
+    mobileContent: () => `<pre data-changelog-text class="changelog-mobile"></pre>`,
     mount: async (root) => {
       const { mountChangelog } = await import('./features/changelog');
       mountChangelog(root);
@@ -126,9 +162,12 @@ export const APPS: AppDef[] = [
     id: 'gallery',
     title: 'Gallery',
     icon: '/img/pic.png',
-    kind: 'link',
-    href: '/gallery.html',
+    kind: 'window',
+    desktop: { width: 560, top: 60, left: 560 },
     tileColor: '#2FB6C4',
+    content: () => galleryGridHtml('desktop'),
+    mobileContent: () => galleryGridHtml('mobile'),
+    mount: (root) => mountGallery(root),
   },
   {
     id: 'cube',
