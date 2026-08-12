@@ -26,8 +26,10 @@ export function makeDraggable(win: HTMLElement, handle: HTMLElement, container: 
     const parentRect = container.getBoundingClientRect();
     let nx = origX + dx;
     let ny = origY + dy;
-    nx = Math.max(-win.offsetWidth + 80, Math.min(nx, parentRect.width - 80));
-    ny = Math.max(0, Math.min(ny, parentRect.height - 32));
+    const maxX = Math.max(0, parentRect.width - win.offsetWidth);
+    const maxY = Math.max(0, parentRect.height - win.offsetHeight);
+    nx = Math.max(0, Math.min(nx, maxX));
+    ny = Math.max(0, Math.min(ny, maxY));
     win.style.left = `${nx}px`;
     win.style.top = `${ny}px`;
   });

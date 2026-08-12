@@ -24,11 +24,14 @@ function buildTitleBar(app: AppDef) {
   controls.className = 'title-bar-controls';
   const min = document.createElement('button');
   min.setAttribute('aria-label', 'Minimize');
-  const max = document.createElement('button');
-  max.setAttribute('aria-label', 'Maximize');
+  let max: HTMLButtonElement | null = null;
+  if (!app.noMaximize) {
+    max = document.createElement('button');
+    max.setAttribute('aria-label', 'Maximize');
+  }
   const close = document.createElement('button');
   close.setAttribute('aria-label', 'Close');
-  controls.append(min, max, close);
+  controls.append(min, ...(max ? [max] : []), close);
 
   bar.appendChild(controls);
   return { bar, min, max, close };
@@ -82,6 +85,7 @@ function buildDesktopWindow(app: AppDef, desktop: HTMLElement) {
   win.style.width = `${app.desktop.width}px`;
   win.style.top = `${app.desktop.top}px`;
   win.style.left = `${app.desktop.left}px`;
+  if (app.desktop.height) win.style.height = `${app.desktop.height}px`;
   win.style.zIndex = String(zCounter++);
   win.dataset.appId = app.id;
 
@@ -107,7 +111,7 @@ function buildDesktopWindow(app: AppDef, desktop: HTMLElement) {
 
   let maximized = false;
   let savedRect = { top: win.style.top, left: win.style.left, width: win.style.width, height: win.style.height };
-  max.addEventListener('click', (e) => {
+  max?.addEventListener('click', (e) => {
     e.stopPropagation();
     if (!maximized) {
       savedRect = { top: win.style.top, left: win.style.left, width: win.style.width, height: win.style.height };
@@ -116,9 +120,11 @@ function buildDesktopWindow(app: AppDef, desktop: HTMLElement) {
       win.style.left = '0px';
       win.style.width = `${rect.width}px`;
       win.style.height = `${rect.height}px`;
+      win.classList.add('is-maximized');
       max.setAttribute('aria-label', 'Restore');
     } else {
       Object.assign(win.style, savedRect);
+      win.classList.remove('is-maximized');
       max.setAttribute('aria-label', 'Maximize');
     }
     maximized = !maximized;
@@ -364,8 +370,10 @@ export function initDesktopEnvironment() {
       <div class="task-bar">
         <button id="start_menu" type="button"></button>
         <div class="task-bar_space"></div>
-        <div class="taskbar-notif"><img src="/img/taskbar_notif.png" alt="" /></div>
-        <button class="taskbar-clock js-clock" type="button" title="Toggle 12/24h"></button>
+        <div class="taskbar-notif">
+          <img src="/img/taskbar_notif.png" alt="" />
+          <button class="taskbar-clock js-clock" type="button" title="Toggle 12/24h"></button>
+        </div>
       </div>
     </div>
     <div class="mobile-shell">

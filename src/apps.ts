@@ -8,7 +8,8 @@ export interface AppDef {
   icon: string; // path to an icon image
   kind: AppKind;
   href?: string; // for kind === 'link'
-  desktop?: { width: number; top: number; left: number };
+  desktop?: { width: number; top: number; left: number; height?: number };
+  noMaximize?: boolean; // hides the Maximize control for small utility windows
   centered?: boolean;
   tileColor?: string; // background color for the mobile (WP/CE-style) tile
   tileWide?: boolean; // renders as a double-width tile on the mobile home screen
@@ -62,7 +63,7 @@ export const APPS: AppDef[] = [
     tileColor: '#1BA1E2',
     tileWide: true,
     mobileFullBleed: true,
-    content: () => `<pre>${CMD_ASCII}</pre>`,
+    content: () => `<pre class="cmd-pre-desktop">${CMD_ASCII}</pre>`,
     mobileContent: () => `<pre class="cmd-pre-mobile">${CMD_ASCII}</pre>`,
   },
   {
@@ -72,6 +73,7 @@ export const APPS: AppDef[] = [
     kind: 'window',
     desktop: { width: 230, top: 340, left: 40 },
     tileColor: '#FA6800',
+    noMaximize: true,
     content: () =>
       `<div class="link-list">${LINKS.map(
         (l) =>
@@ -84,6 +86,7 @@ export const APPS: AppDef[] = [
     icon: '/img/folder.png',
     kind: 'window',
     desktop: { width: 230, top: 340, left: 300 },
+    noMaximize: true,
     content: () => `
       <div class="link-list">
         <button type="button" data-open-app="gallery"><img src="/img/pic.png" width="14" height="13" alt="" /> Gallery</button>
@@ -103,6 +106,7 @@ export const APPS: AppDef[] = [
     centered: true,
     tileColor: '#60A917',
     tileWide: true,
+    noMaximize: true,
     content: () => `
       <h4>
         <img data-mc-icon style="display:none; image-rendering:pixelated;" alt="server icon" />
@@ -147,11 +151,10 @@ export const APPS: AppDef[] = [
     title: 'Changelog',
     icon: '/img/folder.png',
     kind: 'window',
-    desktop: { width: 500, top: 120, left: 900 },
+    desktop: { width: 500, top: 120, left: 900, height: 460 },
     tileColor: '#A200FF',
     mobileFullBleed: true,
-    content: () =>
-      `<pre data-changelog-text style="height:380px; width:100%; min-height:200px; overflow:scroll; color:#000; background:#fff; resize:both; user-select:text;"></pre>`,
+    content: () => `<pre data-changelog-text class="changelog-desktop"></pre>`,
     mobileContent: () => `<pre data-changelog-text class="changelog-mobile"></pre>`,
     mount: async (root) => {
       const { mountChangelog } = await import('./features/changelog');
