@@ -113,6 +113,7 @@ function buildDesktopWindow(app: AppDef, desktop: HTMLElement) {
   let savedRect = { top: win.style.top, left: win.style.left, width: win.style.width, height: win.style.height };
   max?.addEventListener('click', (e) => {
     e.stopPropagation();
+    win.classList.add('win-transition');
     if (!maximized) {
       savedRect = { top: win.style.top, left: win.style.left, width: win.style.width, height: win.style.height };
       const rect = desktop.getBoundingClientRect();
@@ -129,6 +130,7 @@ function buildDesktopWindow(app: AppDef, desktop: HTMLElement) {
     }
     maximized = !maximized;
     focusWindow(app.id);
+    window.setTimeout(() => win.classList.remove('win-transition'), 420);
   });
 
   close.addEventListener('click', (e) => {

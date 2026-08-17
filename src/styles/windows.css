@@ -98,14 +98,44 @@
   box-sizing: border-box;
 }
 
-/* A little larger than the xp.css default so the banner reads better inside
-   the wide Command Prompt window — and noticeably larger still once the
-   window is maximized. */
+/* A window being maximized/restored animates its position/size with a
+   slight spring overshoot instead of snapping instantly. */
+.windows.window.win-transition {
+  transition: top 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), left 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+    width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), height 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Command Prompt: an all-black window (no cream xp.css chrome peeking
+   through), flush edge-to-edge, that never spills text past its own
+   border — normal size keeps the regular xp.css text size, and only grows
+   (clamped, never overflowing) once the window is maximized. */
+.windows.window[data-app-id="cmd"] {
+  display: flex;
+  flex-direction: column;
+  background: #000;
+}
+.windows.window[data-app-id="cmd"] .window-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  margin: 0;
+  padding: 0;
+  background: #000;
+  box-sizing: border-box;
+}
 .cmd-pre-desktop {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  margin: 0 !important;
+  overflow: auto;
+  box-sizing: border-box;
   transition: font-size 0.25s ease;
 }
 .windows.window.is-maximized .cmd-pre-desktop {
-  font-size: 2rem;
+  font-size: clamp(1rem, 1.6vw, 2rem);
 }
 
 /* Layout-only helpers (no color/border/font overrides — those stay xp.css defaults) */
@@ -137,6 +167,21 @@
   background: url("/img/taskbar_back.png");
   image-rendering: pixelated;
   z-index: 10000000;
+}
+
+#start_menu,
+.taskbar-item,
+.taskbar-clock {
+  appearance: none;
+  -webkit-appearance: none;
+  outline: none;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+#start_menu:focus,
+.taskbar-item:focus,
+.taskbar-clock:focus {
+  outline: none;
 }
 
 #start_menu {
@@ -214,7 +259,7 @@
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  padding: 0 6px;
+  padding: 0 0px;
   image-rendering: pixelated;
 }
 
@@ -224,7 +269,7 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding-right: 4px;
+  padding-right: 12px;
   border: none;
   background: transparent;
   color: #fff;
@@ -232,9 +277,20 @@
   font-family: "Pixelated MS Sans Serif", Arial;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
   cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.taskbar-clock:hover {
+  background: transparent;
 }
 .taskbar-clock:active {
+  background: transparent;
   filter: brightness(0.85);
+}
+.taskbar-notif img {
+  -webkit-user-drag: none;
+  user-select: none;
+  pointer-events: none;
 }
 
 /* ---------- start menu popup ---------- */
