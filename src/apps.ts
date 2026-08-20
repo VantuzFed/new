@@ -63,7 +63,7 @@ export const APPS: AppDef[] = [
     title: 'Command Prompt',
     icon: '/img/folder.png',
     kind: 'window',
-    desktop: { width: 870, top: 5, left: 40 },
+    desktop: { width: 870 },
     tileColor: '#1BA1E2',
     tileWide: true,
     mobileFullBleed: true,
@@ -75,7 +75,7 @@ export const APPS: AppDef[] = [
     title: 'Links',
     icon: '/img/folder.png',
     kind: 'window',
-    desktop: { width: 230, top: 340, left: 40 },
+    desktop: { width: 230 },
     tileColor: '#FA6800',
     noMaximize: true,
     content: () =>
@@ -89,7 +89,7 @@ export const APPS: AppDef[] = [
     title: 'Utils',
     icon: '/img/folder.png',
     kind: 'window',
-    desktop: { width: 230, top: 340, left: 300 },
+    desktop: { width: 230 },
     noMaximize: true,
     content: () => `
       <div class="link-list">
@@ -108,7 +108,7 @@ export const APPS: AppDef[] = [
     title: 'Minecraft Server',
     icon: '/img/grass_block_top.png',
     kind: 'window',
-    desktop: { width: 400, top: 340, left: 560 },
+    desktop: { width: 400 },
     centered: true,
     tileColor: '#60A917',
     tileWide: true,
