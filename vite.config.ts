@@ -7,8 +7,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),
-        cube: resolve(__dirname, 'cube.html'),
-        threed: resolve(__dirname, 'threed.html'),
       },
     },
   },

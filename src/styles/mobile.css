@@ -229,17 +229,17 @@
   overflow: hidden;
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--tile-color) 60%, #fff) 0%,
-    color-mix(in srgb, var(--tile-color) 95%, transparent) 42%,
-    color-mix(in srgb, var(--tile-color) 95%, transparent) 60%,
-    color-mix(in srgb, var(--tile-color) 78%, #000) 100%
+    color-mix(in srgb, var(--tile-color) 42%, transparent) 0%,
+    color-mix(in srgb, var(--tile-color) 52%, transparent) 45%,
+    color-mix(in srgb, var(--tile-color) 58%, transparent) 65%,
+    color-mix(in srgb, var(--tile-color) 68%, transparent) 100%
   );
-  backdrop-filter: blur(3px) saturate(1.15);
-  -webkit-backdrop-filter: blur(3px) saturate(1.15);
+  backdrop-filter: blur(16px) saturate(1.1);
+  -webkit-backdrop-filter: blur(16px) saturate(1.1);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.6),
-    inset 0 -6px 10px rgba(0, 0, 0, 0.25),
-    0 3px 8px rgba(0, 0, 0, 0.35);
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -6px 10px rgba(0, 0, 0, 0.15),
+    0 3px 8px rgba(0, 0, 0, 0.3);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
 }
 
@@ -249,9 +249,9 @@
   inset: 0;
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.85) 0%,
-    rgba(255, 255, 255, 0.35) 18%,
-    rgba(255, 255, 255, 0.05) 40%,
+    rgba(255, 255, 255, 0.28) 0%,
+    rgba(255, 255, 255, 0.1) 18%,
+    rgba(255, 255, 255, 0.02) 40%,
     rgba(255, 255, 255, 0) 55%
   );
   pointer-events: none;
@@ -264,7 +264,7 @@
   left: -10%;
   width: 70%;
   height: 60%;
-  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 70%);
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 70%);
   transform: rotate(-8deg);
   pointer-events: none;
 }
@@ -491,6 +491,15 @@
   border: none;
   border-radius: 0;
 }
+.ce-content.ce-content--full > .cube-embed,
+.ce-content.ce-content--full > .blog-mock,
+.ce-content.ce-content--full > .editor,
+.ce-content.ce-content--full > .calc {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+}
 
 .ce-content .cmd-pre-mobile {
   overflow: auto;
@@ -521,25 +530,95 @@
 }
 
 /* ---- Minecraft status rows (mobile) ---- */
-.mc-mobile-hero {
+/* ---- Minecraft status card (mobile) — decorative, no flat icon rows ---- */
+.mc-card {
+  margin: 16px 14px 0;
+  padding: 22px 16px 16px;
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  color: #fff;
+  background: linear-gradient(160deg, #4f97ff 0%, #2f6fe0 35%, #1c4fb8 70%, #0e3480 100%);
+  box-shadow: 0 10px 24px rgba(10, 30, 70, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.mc-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 20% -10%, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0) 45%),
+    radial-gradient(circle at 100% 110%, rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0) 55%);
+  pointer-events: none;
+}
+.mc-card__icon {
+  position: relative;
+  z-index: 1;
   display: flex;
   justify-content: center;
-  padding: 18px 0 6px;
+  margin-bottom: 8px;
 }
-.mc-mobile-hero img {
+.mc-card__icon img {
   width: 56px;
   height: 56px;
   image-rendering: pixelated;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
 }
+.mc-card__ip {
+  position: relative;
+  z-index: 1;
+  font-size: 15px;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  margin-bottom: 14px;
+  word-break: break-all;
+}
+.mc-card__stats {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.mc-stat {
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
+  padding: 8px 6px;
+  backdrop-filter: blur(2px);
+}
+.mc-stat--status {
+  grid-column: span 2;
+}
+.mc-stat__label {
+  display: block;
+  font-size: 9.5px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  opacity: 0.8;
+  margin-bottom: 3px;
+}
+.mc-stat__value {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.mc-card__loading {
+  position: relative;
+  z-index: 1;
+  margin: 10px 0 0;
+}
+
 .mc-mobile-controls {
-  padding: 12px;
+  padding: 14px 16px;
 }
 .mc-mobile-controls input[type="text"] {
   width: 100%;
   box-sizing: border-box;
   margin: 0 0 8px;
-  padding: 8px;
+  padding: 9px 10px;
+  border-radius: 8px;
   border: 1px solid #8a8578;
   font-size: 13px;
 }
@@ -549,11 +628,17 @@
 }
 .mc-mobile-buttons button {
   flex: 1;
-  padding: 8px;
-  border: 1px solid #4a6fa5;
-  border-radius: 3px;
-  background: linear-gradient(180deg, #eaf2ff, #b9d3f5);
+  padding: 9px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(160deg, #4f97ff, #1c4fb8);
+  color: #fff;
+  font-weight: 700;
   font-size: 12px;
+  box-shadow: 0 3px 8px rgba(28, 79, 184, 0.4);
+}
+.mc-mobile-buttons button:active {
+  filter: brightness(0.9);
 }
 
 /* ---- Gallery (shared by desktop window-body and mobile ce-content) ---- */

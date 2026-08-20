@@ -1,7 +1,6 @@
 import { APPS } from './apps';
 import type { AppDef } from './apps';
 import { makeDraggable } from './drag';
-import { toggleWinamp } from './features/winamp';
 
 let zCounter = 10;
 let focusedId: string | null = null;
@@ -45,9 +44,6 @@ function wireContentActions(root: HTMLElement) {
       else openDesktopWindow(id);
     });
   });
-  root.querySelectorAll<HTMLElement>('[data-winamp-trigger]').forEach((btn) => {
-    btn.addEventListener('click', () => toggleWinamp());
-  });
   root.querySelectorAll<HTMLElement>('[data-nav]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const href = btn.getAttribute('data-nav')!;
@@ -81,13 +77,15 @@ function enrichMobileButtons(root: HTMLElement) {
 function buildDesktopWindow(app: AppDef, desktop: HTMLElement) {
   if (!app.desktop || !app.content) return;
   const win = document.createElement('div');
-  win.className = 'windows window opening';
+  win.className = app.startClosed ? 'windows window disabled' : 'windows window opening';
   win.style.width = `${app.desktop.width}px`;
-  win.style.top = `${app.desktop.top}px`;
-  win.style.left = `${app.desktop.left}px`;
-  if (app.desktop.height) win.style.height = `${app.desktop.height}px`;
+  if (app.desktop.height) {
+    win.style.height = `${app.desktop.height}px`;
+    win.classList.add('windows--fill');
+  }
   win.style.zIndex = String(zCounter++);
   win.dataset.appId = app.id;
+  if (app.startClosed) closedApps.add(app.id);
 
   const { bar, min, max, close } = buildTitleBar(app);
   win.appendChild(bar);
@@ -99,6 +97,7 @@ function buildDesktopWindow(app: AppDef, desktop: HTMLElement) {
   win.appendChild(body);
 
   desktop.appendChild(win);
+  centerWindow(win, desktop, app.dockBottom);
   desktopWindowEls.set(app.id, win);
   makeDraggable(win, bar, desktop);
 
@@ -145,6 +144,18 @@ function buildDesktopWindow(app: AppDef, desktop: HTMLElement) {
   app.mount?.(body);
 
   return win;
+}
+
+/** Every window opens centered on screen by default (still draggable
+ * afterwards). Measured from actual rendered size, so it works for both
+ * fixed-height windows and ones that size to their content. Windows with
+ * `dockBottom` are horizontally centered but pinned to the bottom edge. */
+function centerWindow(win: HTMLElement, desktop: HTMLElement, dockBottom = false) {
+  const rect = desktop.getBoundingClientRect();
+  const w = win.offsetWidth;
+  const h = win.offsetHeight;
+  win.style.left = `${Math.max(0, (rect.width - w) / 2)}px`;
+  win.style.top = dockBottom ? `${Math.max(0, rect.height - h - 12)}px` : `${Math.max(0, (rect.height - h) / 2)}px`;
 }
 
 function focusWindow(id: string) {
@@ -231,9 +242,7 @@ function toggleStartMenu(forceClose = false) {
     item.className = 'start-popup__item';
     item.innerHTML = `<img src="${app.icon}" alt="" /><span>${app.title}</span>`;
     item.addEventListener('click', () => {
-      if (app.kind === 'action') {
-        toggleWinamp();
-      } else if (app.kind === 'link') {
+      if (app.kind === 'link') {
         window.location.href = app.href!;
       } else if (minimizedApps.has(app.id)) {
         restoreWindow(app.id);
@@ -270,7 +279,7 @@ function renderMobileTiles() {
   if (!grid) return;
   grid.innerHTML = '';
   for (const app of APPS) {
-    if (app.id === 'utils' || app.id === 'winamp') continue; // "Utils" is a desktop-only folder window; Winamp has no touch-friendly mobile UI
+    if (app.id === 'utils') continue; // "Utils" is just a desktop folder window
     const tile = document.createElement('button');
     tile.type = 'button';
     tile.className = 'tile' + (app.tileWide ? ' tile-wide' : '');
@@ -281,8 +290,7 @@ function renderMobileTiles() {
       <span>${app.title}</span>
     `;
     tile.addEventListener('click', () => {
-      if (app.kind === 'action') toggleWinamp();
-      else if (app.kind === 'link') window.location.href = app.href!;
+      if (app.kind === 'link') window.location.href = app.href!;
       else openMobileApp(app.id);
     });
     grid.appendChild(tile);
